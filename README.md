@@ -1,6 +1,6 @@
 # retention-file-remover
 
-That's right gang, this is a really handy file deletion script based on a retention factor! This means certain amount of files are deleted if over the retention number, this script will delete the **oldest** files first. This is handy for backups, logs etc for those who don't trust Linuxes log rotation!
+That's right gang, this is a really handy file deletion script based on a retention factor! This means a certain amount of files are deleted if over the configured retention number. This script will delete the **oldest** files first. This is handy for backups (can't keep backups forever, time to automate!), logs etc for those who don't trust Linuxes log rotation!
 
 There are two available ways for the script to detect the oldest files:
 
