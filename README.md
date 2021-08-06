@@ -28,7 +28,7 @@ Install dependencies (there's only one, I promise!):
 npm i
 ```
 
-After [configuration](#Configuration (config.json)) (see below first, please!), you can start it
+After [configuration](#configuration-configjson) (see below first, please!), you can start it
 
 ```bash
 node script.js
