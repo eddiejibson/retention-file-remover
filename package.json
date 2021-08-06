@@ -1,0 +1,11 @@
+{
+  "name": "oxro-backup-remover",
+  "version": "1.0.0",
+  "description": "Yes, it removes backups.",
+  "main": "script.js",
+  "author": "Edward Jibson<jibson@tuta.io>",
+  "license": "GNU GPLv3",
+  "dependencies": {
+    "moment": "^2.29.1"
+  }
+}
