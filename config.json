@@ -1,7 +1,0 @@
-{
-  "fileDateFormat": "DD-MM-YYYY@HH.mm.ss",
-  "noDoubleDotFileExtensions": false,
-  "directories": [
-    { "path": "/home/jibn/Documents/test-retention", "retention": 2 }
-  ]
-}
