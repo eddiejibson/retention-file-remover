@@ -6,7 +6,7 @@ There are two available ways for the script to detect the oldest files:
 
 - By file creation date (Easiest) : The script will delete the oldest files based on their creation date in the file system.
 
-- By file name date (**Configurable**, to your date format): The script will delete the file from their date defined in the file name (e.g even if the file `19/08/2021@12:30:00.txt` was created in 2001, it's date assumed would be the 19th August 2021 at 12:30 - if configured correctly)
+- By file name date ([Configurable](#filedateformat-optional), to your date format): The script will delete the file from their date defined in the file name (e.g even if the file `19/08/2021@12:30:00.txt` was created in 2001, it's date assumed would be the 19th August 2021 at 12:30 - if configured correctly)
 
 ## Installation
 
