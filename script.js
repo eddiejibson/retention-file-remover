@@ -174,7 +174,7 @@ const processDirectory = async (
       files = formattedFiles;
     }
   } else {
-    files = fs.readFileSync(path);
+    files = fs.readdirSync(path);
   }
 
   const formattedFiles = files
@@ -259,7 +259,6 @@ checkConfig();
 (async () => {
   await Promise.all(
     config.directories.map(async (directory) => {
-      console.log(directory);
       await processDirectory(
         directory.path,
         directory.retention,
