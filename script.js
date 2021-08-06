@@ -1,6 +1,7 @@
 // Believe me guys, I wanted to use dayjs (lighter) but the bloody .toDate() was broken!
 const moment = require("moment"),
   fs = require("fs"),
+  exec = require("child_process").exec,
   config = require("./config.json");
 
 // Valid double extensions to allow for (otherwise will only be last word from the last dot)
@@ -23,6 +24,7 @@ const checkConfig = () => {
   config.directories = config.directories.map((directory) => {
     checkConfigKeys(["path", "retention"], directory);
     return {
+      ...directory,
       path:
         directory.path.substr(directory.path.length - 1) === "/"
           ? directory.path.substr(0, directory.path.length - 1)
@@ -76,7 +78,11 @@ const log = (msg) => {
 const getExtensionlessFilenameExtension = (fileName) => {
   if (config.noDoubleDotFileExtensions) {
     const extension = `.${fileName.split(".").pop()}`;
-    return { extension, fileName: fileName.replace(extension, "") };
+    return {
+      extension,
+      fileName: fileName.replace(extension, ""),
+      original: fileName,
+    };
   }
   const fileNameSplit = fileName.split(".");
   // Multiple dots found in filename, check and see if any are matching of double extensions
@@ -89,9 +95,14 @@ const getExtensionlessFilenameExtension = (fileName) => {
       return {
         extension: compareStr,
         fileName: fileName.replace(compareStr, ""),
+        original: fileName,
       };
     const extension = `.${fileNameSplit[fileNameSplit.length - 1]}`;
-    return { extension, fileName: fileName.replace(extension, "") };
+    return {
+      extension,
+      fileName: fileName.replace(extension, ""),
+      original: fileName,
+    };
   }
 };
 
@@ -109,53 +120,113 @@ const deleteFile = (path) => {
   });
 };
 
+const constructSftpCommand = (command, sftp, path) => {
+  return `echo "${command}" | ${
+    sftp.password ? 'sshpass -p "' + sftp.password + '" ' : ""
+  }sftp -q ${sftp.username}@${sftp.host}:${path.substr(1, path.length - 1)}`;
+};
+
+const shellExec = (command) => {
+  return new Promise((resolve, reject) => {
+    exec(command, (err, stdout) => {
+      if (err) reject(err);
+      resolve(stdout || true);
+    });
+  });
+};
+
 /**
  * Processes the directory in question
  * @param {string} path Path of directory to run checks on
  * @param {string} retention How many files should be kept before the oldest is deleted?
  */
-const processDirectory = async (path, retention) => {
-  fs.readdir(path, async (err, files) => {
-    if (err) {
-      console.error(`Error opening ${path}`, err);
-      process.exit(1);
-    }
-    const formattedFiles = files
-      .map((filename) => {
-        const fileDetails = getExtensionlessFilenameExtension(filename);
-        const { fileName } = fileDetails;
-        let dateFromFilename = null;
-        if (config.fileDateFormat) {
-          const dateFromFilenameDate = moment(
-            fileName,
-            config.fileDateFormat
-          ).toDate();
+const processDirectory = async (
+  path,
+  retention,
+  _fileDateFormat = undefined,
+  sftp = undefined
+) => {
+  let files;
 
-          const timeOfFile = dateFromFilenameDate.getTime();
-          dateFromFilename = timeOfFile || null;
-        }
+  const fileDateFormat = _fileDateFormat || config.fileDateFormat;
+  if (!fileDateFormat && sftp) {
+    console.error(
+      log(
+        "fileDateFormat is required for SFTP, no way to easily calculate file creation date otherwise."
+      )
+    );
+    process.exit(1);
+  }
 
-        const fullPath = `${path}/${filename}`;
-
-        return {
-          ...fileDetails,
-          date: dateFromFilename || getFileBirthtime(fullPath),
-          path: fullPath,
-        };
+  if (sftp) {
+    const command = constructSftpCommand("ls *", sftp, path);
+    const responseFromSftp = (await shellExec(command)).split("\n");
+    const formattedFiles = responseFromSftp
+      .map((file) => {
+        return file.trim();
       })
-      .sort((a, b) => {
-        return b.date - a.date;
+      .filter((file) => {
+        return file.length !== 0;
       });
+    if (/sftp\>.*/g.test(formattedFiles[0])) {
+      files = formattedFiles.splice(1, formattedFiles.length);
+    } else {
+      files = formattedFiles;
+    }
+  } else {
+    files = fs.readFileSync(path);
+  }
 
-    if (formattedFiles.length > retention) {
-      const filesToDeleteCount = formattedFiles.length - retention;
-      log(`Found ${filesToDeleteCount} file(s) to delete`);
-      const filesToDelete = formattedFiles.splice(
-        formattedFiles.length - filesToDeleteCount,
-        formattedFiles.length
-      );
-      const deletedFiles = await Promise.all(
-        filesToDelete.map(async (fileToDelete) => {
+  const formattedFiles = files
+    .map((filename) => {
+      const fileDetails = getExtensionlessFilenameExtension(filename);
+      const { fileName } = fileDetails;
+      let dateFromFilename = null;
+      if (fileDateFormat) {
+        const dateFromFilenameDate = moment(fileName, fileDateFormat).toDate();
+
+        const timeOfFile = dateFromFilenameDate.getTime();
+        dateFromFilename = timeOfFile || null;
+      }
+
+      const fullPath = `${path}/${filename}`;
+
+      return {
+        ...fileDetails,
+        date: dateFromFilename || getFileBirthtime(fullPath),
+        path: fullPath,
+      };
+    })
+    .sort((a, b) => {
+      return b.date - a.date;
+    });
+
+  if (formattedFiles.length > retention) {
+    const filesToDeleteCount = formattedFiles.length - retention;
+    log(`Found ${filesToDeleteCount} file(s) to delete`);
+    const filesToDelete = formattedFiles.splice(
+      formattedFiles.length - filesToDeleteCount,
+      formattedFiles.length
+    );
+    const deletedFiles = await Promise.all(
+      filesToDelete.map(async (fileToDelete) => {
+        if (sftp) {
+          const command = constructSftpCommand(
+            `rm ${fileToDelete.original}`,
+            sftp,
+            path
+          );
+          await shellExec(command).catch((err) => {
+            console.error(
+              log(
+                `There was an error removing file from remote repoistory ${fileToDelete.path}`
+              ),
+              err
+            );
+            return false;
+          });
+          return true;
+        } else {
           await deleteFile(fileToDelete.path).catch((err) => {
             console.error(
               log(`There was an error removing file ${fileToDelete.path}`),
@@ -164,23 +235,23 @@ const processDirectory = async (path, retention) => {
             return false;
           });
           return true;
-        })
-      );
+        }
+      })
+    );
 
-      const deletedFilesCount = deletedFiles.filter(
-        (value) => value === true
-      ).length;
+    const deletedFilesCount = deletedFiles.filter(
+      (value) => value === true
+    ).length;
 
-      log(
-        `A total of ${deletedFilesCount} files were deleted based on retention configuration of ${retention}`
-      );
-    } else {
-      log(
-        `There were no files that were found based on retention configuration of ${retention}`
-      );
-    }
-    return true;
-  });
+    log(
+      `A total of ${deletedFilesCount} files were deleted based on retention configuration of ${retention}`
+    );
+  } else {
+    log(
+      `There were no files that were found based on retention configuration of ${retention}`
+    );
+  }
+  return true;
 };
 
 checkConfig();
@@ -188,7 +259,13 @@ checkConfig();
 (async () => {
   await Promise.all(
     config.directories.map(async (directory) => {
-      await processDirectory(directory.path, directory.retention);
+      console.log(directory);
+      await processDirectory(
+        directory.path,
+        directory.retention,
+        directory.fileDateFormat || undefined,
+        directory.sftp
+      );
     })
   );
 })().catch((err) => {

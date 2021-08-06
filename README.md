@@ -1,6 +1,6 @@
 # retention-file-remover
 
-That's right gang, this is a really handy file deletion script based on a retention factor! This means a certain amount of files are deleted if over the configured retention number. This script will delete the **oldest** files first. This is handy for backups (can't keep backups forever, time to automate!), logs etc for those who don't trust Linuxes log rotation!
+That's right gang, this is a really handy file deletion script based on a retention factor! **It also allows for removal via remote SFTP servers**! This means a certain amount of files are deleted if over the configured retention number. This script will delete the **oldest** files first. This is handy for backups (can't keep backups forever, time to automate!), logs etc for those who don't trust Linuxes log rotation!
 
 There are two available ways for the script to detect the oldest files:
 
@@ -58,6 +58,10 @@ So, to recap, inside the `directories` key must contain:
 `path` _string_: Full absolute path to directory to check
 
 `retention` _int_: How many files to keep before the oldest is removed
+
+`sftp` (optional) _{host: string, password?: string, username: string}_ : SFTP connection information for remote server. **When using this option, it is not easy to determine file creation date, so you must set the fileDateFormat and file names must be accomdating of such**
+
+`fileDateFormat` (optional) _string_: The key `fileDateFormat` **is optional**. It's only to be set if you want the script to ignore the creation date of a file and instead assume the file's creation date from the file name. **This will over-ride the value inside the main config's fileDateFormat, directory specific**
 
 Here's the type:
 
