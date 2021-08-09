@@ -2,7 +2,7 @@
 
 That's right gang, this is a really handy file deletion script based on a retention factor! **It also allows for removal via remote SFTP servers**! This means a certain amount of files are deleted if over the configured retention number. This script will delete the **oldest** files first. This is handy for backups (can't keep backups forever, time to automate!), logs etc for those who don't trust Linuxes log rotation!
 
-I made this for myself as I have a lot of SFTP servers holding a lot of backups (love ya Hetzner) and I wanted a script that could manage all of them from one config file. 
+I made this for myself as I have a lot of SFTP servers holding a lot of backups (love ya Hetzner) and I wanted a script that could manage all of them from one config file without needing to run it on every single server (also some storage services only provide SFTP access, so running this script on there would be impossible).
 
 If this is of use to you, please consider ⭐ing, makes my GitHub look a lot spicier 😊
 
