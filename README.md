@@ -12,6 +12,8 @@ There are two available ways for the script to detect the oldest files:
 
 - By file name date ([Configurable](#filedateformat-optional), to your date format): The script will delete the file from their date defined in the file name (e.g even if the file `19/08/2021@12:30:00.txt` was created in 2001, it's date assumed would be the 19th August 2021 at 12:30 - if configured correctly)
 
+**Important SFTP note**: If you have not connected to the SFTP via the machine you are running this script on, it is likely it will fail. This is because, as you all know, it will ask you if you'd like to continue connecting as can't verify the authenticity of host. To solve this, connect to the machine yourself to accept the warning and after this, the script can be expected to run as expected. I will try and come up of a way to fix this in the next version - I have something in mind but want to make sure it's done properly :)
+
 ## Installation
 
 Installing is easy! Just clone the GitHub repository:
@@ -70,7 +72,7 @@ So, to recap, inside the `directories` key must contain:
 Here's the type:
 
 ```javascript
-directories: {path: string, retention: number}[]
+directories: {path: string, retention: number, sftp?: {host: string, password?: string, username: string}}[]
 ```
 
 ### fileDateFormat (optional)
