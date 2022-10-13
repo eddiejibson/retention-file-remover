@@ -101,7 +101,7 @@ fileDateFormat?: string
 
 **Note: not really much point in using this**
 
-So this is just a silly configuration option I added, this is for if you're a huge fan of efficiency and are 100% sure all your files inside all your directories do **not** include double dot file extensions (e.g `.tar.gz` or `.css.gz`) so the script doesn't run these checks to determine if the file extension is double dotted or not and just assumes from the last dot..
+So this is just a silly configuration option I added, this is for if you're a huge fan of efficiency and are 100% sure all your files inside all your directories do **not** include double dot file extensions (e.g `.tar.gz` or `.css.gz`) so the script doesn't run these checks to determine if the file extension is double dotted or not and just assumes from the last dot... This is also as many files may include several dots just in the name irrelevant to the actual file extension, so this for the best assurances it will check correctly.
 
 The default if not set is `false`, meaning checks are ran.
 
